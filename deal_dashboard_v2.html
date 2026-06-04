@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SE Deal Cockpit v2</title>
+<style>
+  :root{
+    --bg:#f3f4f6; --card:#ffffff; --ink:#1b2030; --muted:#6b7280; --soft:#9ca3af; --line:#e6e8ec;
+    --green:#15803d; --amber:#b45309; --red:#b91c1c; --grey:#6b7280;
+    --green-bg:#e8f6ee; --amber-bg:#fbf1e3; --red-bg:#fbeaea; --grey-bg:#eef0f3;
+    --accent:#6d28d9; --accent-bg:#f3eefc; --accent-line:#e1d5fa;
+    --shadow:0 1px 2px rgba(16,24,40,.05),0 2px 6px rgba(16,24,40,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1400px;margin:0 auto;padding:24px 26px 64px;}
+
+  header.app{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:18px;}
+  header.app h1{margin:0;font-size:22px;letter-spacing:-.3px;}
+  header.app .sub{font-size:13px;color:var(--muted);margin-top:3px;}
+  .dates{text-align:right;font-size:12px;color:var(--muted);line-height:1.65;}
+  .dates b{color:var(--ink);font-weight:600;}
+  .gov{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+  .gov .tag{font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-bg);
+    border:1px solid var(--accent-line);border-radius:8px;padding:6px 11px;}
+  .gov .tag.warn{color:var(--red);background:var(--red-bg);border-color:#f3c4c0;}
+
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+  @media(max-width:980px){.kpis{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:520px){.kpis{grid-template-columns:1fr;}}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);}
+  .kpi .lab{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600;}
+  .kpi .val{font-size:28px;font-weight:700;letter-spacing:-1px;margin-top:5px;}
+  .kpi.attn .val{color:var(--red);}
+  .kpi.text .val{font-size:12px;font-weight:600;line-height:1.4;margin-top:8px;}
+  .kpi.text .g{display:block;}.kpi.text .g b{color:var(--amber);}
+
+  /* layout: main + attention rail */
+  .cols{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;}
+  @media(max-width:1080px){.cols{grid-template-columns:1fr;}}
+
+  /* controls */
+  .controls{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 16px;box-shadow:var(--shadow);margin-bottom:16px;}
+  .controls .line{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .controls .line + .line{margin-top:11px;}
+  input.search{flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;}
+  select{padding:8px 10px;border:1px solid var(--line);border-radius:9px;font-size:12.5px;background:#fff;color:var(--ink);}
+  .lbl{font-size:11px;color:var(--muted);font-weight:600;margin-right:-4px;}
+  .toggle{font-size:12px;font-weight:600;padding:7px 11px;border:1px solid var(--line);border-radius:999px;
+    background:#fff;color:var(--muted);cursor:pointer;user-select:none;}
+  .toggle.on{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-line);}
+  .reset{font-size:12px;color:var(--accent);cursor:pointer;font-weight:600;margin-left:auto;}
+  .count{font-size:12px;color:var(--muted);}
+
+  /* deal list */
+  .deal-list{display:flex;flex-direction:column;gap:12px;}
+  .deal-row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;
+    box-shadow:var(--shadow);cursor:pointer;transition:border-color .12s,box-shadow .12s;}
+  .deal-row:hover{border-color:var(--accent-line);box-shadow:0 2px 10px rgba(109,40,217,.10);}
+  .deal-row .r1{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  .deal-row .name{font-size:16px;font-weight:700;letter-spacing:-.2px;}
+  .deal-row .vertical{font-size:12px;color:var(--muted);margin-top:2px;}
+  .deal-row .r2{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px;align-items:center;}
+  .deal-row .meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:11px;font-size:12.5px;color:var(--ink);}
+  .deal-row .meta .k{color:var(--muted);}
+  .nba{margin-top:10px;font-size:12.5px;color:#3a3f4b;background:#fafafb;border:1px solid var(--line);
+    border-radius:8px;padding:8px 11px;}
+  .nba b{color:var(--accent);font-weight:600;}
+
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.2px;white-space:nowrap;}
+  .pill.stage{background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-line);white-space:normal;}
+  .pill.stale{background:var(--grey-bg);color:#374151;border:1px solid #d1d5db;}
+  .pill.fresh{background:var(--green-bg);color:var(--green);}
+  .pill.medd{background:var(--grey-bg);color:#374151;border:1px solid var(--line);white-space:normal;}
+  .pill.meet{background:#eef6ff;color:#1d4ed8;border:1px solid #cfe0fb;}
+  .pill.attn{background:var(--red-bg);color:var(--red);}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:7px;}
+  .chip.green{background:var(--green-bg);color:var(--green);}.chip.amber{background:var(--amber-bg);color:var(--amber);}
+  .chip.red{background:var(--red-bg);color:var(--red);}.chip.grey{background:var(--grey-bg);color:#374151;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+  .dot.green{background:var(--green);}.dot.amber{background:var(--amber);}.dot.red{background:var(--red);}.dot.grey{background:var(--soft);}
+
+  /* attention rail */
+  .rail h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--red);margin:0 0 12px;font-weight:700;}
+  .att{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;
+    padding:14px 15px;box-shadow:var(--shadow);margin-bottom:12px;}
+  .att .d{font-weight:700;font-size:14px;margin-bottom:9px;}
+  .att .f{margin-bottom:8px;}
+  .att .f .k{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;}
+  .att .f .v{font-size:12.5px;}
+  .att .od{font-size:11.5px;color:var(--muted);margin-top:6px;}
+
+  /* drawer */
+  .scrim{position:fixed;inset:0;background:rgba(16,18,28,.42);opacity:0;pointer-events:none;transition:opacity .18s;z-index:40;}
+  .scrim.open{opacity:1;pointer-events:auto;}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:560px;max-width:94vw;background:var(--bg);
+    box-shadow:-8px 0 30px rgba(16,24,40,.18);transform:translateX(100%);transition:transform .2s ease;z-index:50;
+    display:flex;flex-direction:column;}
+  .drawer.open{transform:translateX(0);}
+  .drawer .dh{padding:18px 22px;background:var(--card);border-bottom:1px solid var(--line);}
+  .drawer .dh .name{font-size:19px;font-weight:700;letter-spacing:-.3px;}
+  .drawer .dh .vertical{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .drawer .close{position:absolute;top:16px;right:18px;font-size:22px;color:var(--muted);cursor:pointer;
+    line-height:1;border:none;background:none;}
+  /* drawer body = left vertical tab rail + right content (no horizontal tab scroll) */
+  .dcontent{display:flex;flex:1;min-height:0;}
+  .tabs{display:flex;flex-direction:column;gap:3px;padding:14px 10px;background:var(--card);
+    border-right:1px solid var(--line);min-width:172px;flex-shrink:0;overflow-y:auto;}
+  .tab{font-size:12.5px;font-weight:600;color:var(--muted);padding:9px 12px;cursor:pointer;
+    border-left:2px solid transparent;border-radius:7px;white-space:normal;text-align:left;line-height:1.25;}
+  .tab:hover{background:#f7f7f9;color:var(--ink);}
+  .tab.on{color:var(--accent);background:var(--accent-bg);border-left-color:var(--accent);}
+  .dbody{padding:18px 22px;overflow-y:auto;flex:1;min-width:0;}
+  @media(max-width:560px){
+    .dcontent{flex-direction:column;}
+    .tabs{flex-direction:row;flex-wrap:wrap;gap:6px;border-right:none;border-bottom:1px solid var(--line);
+      min-width:0;padding:10px 12px;}
+    .tab{border-left:none;border:1px solid var(--line);border-radius:999px;padding:6px 11px;}
+    .tab.on{border-color:var(--accent-line);background:var(--accent-bg);}
+  }
+  .drow{display:flex;gap:10px;font-size:13.5px;margin:10px 0;align-items:baseline;}
+  .drow .k{color:var(--muted);min-width:120px;flex-shrink:0;font-size:12px;}
+  .panel-title{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin:4px 0 8px;}
+  .medd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;}
+  .medd-grid .item{border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:#fff;}
+  .medd-grid .item .lab{font-size:11px;color:var(--muted);margin-bottom:5px;}
+  .medd-grid .item .st{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;}
+  .medd-grid .item .nt{font-size:11px;color:var(--muted);margin-top:5px;font-style:italic;}
+  .member{display:flex;align-items:flex-start;gap:11px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:9px;}
+  .member .who{font-weight:700;font-size:13.5px;}.member .role{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .risk-list{list-style:none;margin:0 0 14px;padding:0;}
+  .risk-list li{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line);}
+  .risk-list li:last-child{border-bottom:none;}
+  .nba-box{font-size:13px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;}
+  .nba-box .owner{font-size:12px;color:var(--muted);margin-top:9px;}
+  .empty{font-size:12.5px;color:var(--muted);font-style:italic;}
+  .cc-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .pill.ccbadge{background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-line);}
+  .cc-note{font-size:11.5px;color:var(--muted);font-style:italic;}
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app">
+    <div>
+      <h1>SE Deal Cockpit <span style="color:var(--accent)">v2</span></h1>
+      <div class="sub">Principal Solutions Engineer — interactive pipeline</div>
+    </div>
+    <div class="dates">
+      <div><b>Command Center as of:</b> <span id="ccAsOf"></span></div>
+      <div><b>Dashboard generated:</b> <span id="genDate"></span></div>
+      <div><b>Records:</b> <span id="recCount"></span> · Source: <span id="srcFile"></span></div>
+    </div>
+  </header>
+
+  <div class="gov">
+    <span class="tag">Command Center is the source of truth</span>
+    <span class="tag">Data generated from approved Command Center content</span>
+    <span class="tag warn">Do not edit dashboard data directly</span>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="cols">
+    <div>
+      <div class="controls">
+        <div class="line">
+          <input class="search" id="search" placeholder="Search deals, competitor, vertical, pain…">
+          <span class="reset" id="reset">Reset</span>
+        </div>
+        <div class="line">
+          <span class="lbl">Stage</span><select id="fStage"></select>
+          <span class="lbl">Industry</span><select id="fIndustry"></select>
+          <span class="lbl">Competitor</span><select id="fCompetitor"></select>
+          <span class="lbl">Weakest</span><select id="fWeak"></select>
+        </div>
+        <div class="line">
+          <span class="lbl">Sort</span>
+          <select id="sort">
+            <option value="meeting">Next meeting date</option>
+            <option value="touch">Last touch date</option>
+            <option value="medd">MEDDPICC health</option>
+            <option value="attention">Attention priority</option>
+            <option value="name">Deal name</option>
+          </select>
+          <span class="toggle" data-flag="attention">Needs attention</span>
+          <span class="toggle" data-flag="stale">Stale</span>
+          <span class="toggle" data-flag="unknownEB">Unknown econ. buyer</span>
+          <span class="toggle" data-flag="security">Security pending</span>
+          <span class="toggle" data-flag="migration">Migration risk</span>
+        </div>
+        <div class="line"><span class="count" id="count"></span></div>
+      </div>
+      <div class="deal-list" id="list"></div>
+    </div>
+
+    <div class="rail">
+      <h2>⚠ Needs Attention This Week</h2>
+      <div id="attention"></div>
+    </div>
+  </div>
+
+  <footer>
+    Dashboard is generated from the approved Deal Command Center. Do not treat this file as the source of truth.
+    If this view and the Command Center disagree, the Command Center wins.
+  </footer>
+</div>
+
+<!-- Detail drawer -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="dh" style="position:relative">
+    <button class="close" id="close">×</button>
+    <div class="name" id="dName"></div>
+    <div class="vertical" id="dVertical"></div>
+  </div>
+  <div class="dcontent">
+    <div class="tabs" id="tabs"></div>
+    <div class="dbody" id="dBody"></div>
+  </div>
+</aside>
+
+<script src="deal_dashboard_data_v1.js"></script>
+<script>
+(function(){
+  const DATA = window.DEAL_DASHBOARD_DATA;
+  if(!DATA){ document.getElementById("list").innerHTML =
+    '<div class="empty">Could not load deal_dashboard_data_v1.js. Keep it in the same folder as this file.</div>'; return; }
+
+  const M = DATA.meta, DEALS = DATA.deals, ATT = DATA.attention;
+  const STALE_DAYS = M.stale_days || 7;
+  const STATUS_LABEL = { green:"Green", amber:"Amber", red:"Red", grey:"Unknown" };
+  const MEDD_KEYS = ["Metrics","Economic buyer","Decision criteria","Decision process","Paper process","Identified pain","Champion","Competition"];
+
+  // meta header
+  document.getElementById("ccAsOf").textContent = M.command_center_as_of;
+  document.getElementById("genDate").textContent = M.generated_at;
+  document.getElementById("recCount").textContent = M.record_count;
+  document.getElementById("srcFile").textContent = M.source_file;
+
+  // helpers
+  const today = new Date();
+  function daysSince(d){ return Math.floor((today - new Date(d+"T00:00:00"))/86400000); }
+  function isStale(d){ return daysSince(d) > STALE_DAYS; }
+  function greenCount(d){ return Object.values(d.meddpicc).filter(v=>v==="green").length; }
+  function attFor(name){ return ATT.find(a=>a.deal===name); }
+  function needsAttention(d){ return !!attFor(d.name); }
+  function unknownEB(d){ return /unknown/i.test(d.economicBuyer); }
+
+  // KPI strip
+  const staleCount = DEALS.filter(d=>isStale(d.lastTouch)).length;
+  const gaps = DEALS.map(d=>`<span class="g">${d.name.split(" ")[0]}: <b>${d.weak}</b></span>`).join("");
+  const KPIS = [
+    {lab:"Active deals", val:DEALS.length},
+    {lab:"Needs attention", val:ATT.length, cls:"attn"},
+    {lab:"Stale deals", val:staleCount},
+    {lab:"Upcoming meetings from snapshot", val:DEALS.filter(d=>d.nextMeeting&&d.nextMeeting.iso).length},
+    {lab:"Weakest MEDDPICC gap (per deal)", val:gaps, cls:"text"}
+  ];
+  document.getElementById("kpis").innerHTML = KPIS.map(k=>
+    `<div class="kpi ${k.cls||''}"><div class="lab">${k.lab}</div><div class="val">${k.val}</div></div>`).join("");
+
+  // attention rail
+  document.getElementById("attention").innerHTML = ATT.length ? ATT.map(a=>`
+    <div class="att">
+      <div class="d">${a.deal}</div>
+      <div class="f"><div class="k">Why now</div><div class="v">${a.whyNow}</div></div>
+      <div class="f"><div class="k">Desired outcome</div><div class="v">${a.outcome}</div></div>
+      <div class="f"><div class="k">Open question</div><div class="v">${a.openQuestion}</div></div>
+      <div class="od">Owner: ${a.owner} · ${a.date}</div>
+    </div>`).join("") : '<div class="empty">No attention items.</div>';
+
+  // populate filter selects
+  function opts(sel, vals, allLabel){
+    sel.innerHTML = `<option value="">${allLabel}</option>` + vals.map(v=>`<option value="${v}">${v}</option>`).join("");
+  }
+  opts(document.getElementById("fStage"), [...new Set(DEALS.map(d=>d.stage))], "All stages");
+  opts(document.getElementById("fIndustry"), [...new Set(DEALS.map(d=>d.industry))], "All industries");
+  opts(document.getElementById("fCompetitor"), [...new Set(DEALS.flatMap(d=>d.competitorTags||[]))].sort(), "All competitors");
+  opts(document.getElementById("fWeak"), MEDD_KEYS, "Any weak component");
+
+  // state
+  const state = { search:"", stage:"", industry:"", competitor:"", weak:"", sort:"meeting",
+    flags:{ attention:false, stale:false, unknownEB:false, security:false, migration:false } };
+
+  // wire controls
+  const $ = id=>document.getElementById(id);
+  $("search").oninput = e=>{ state.search=e.target.value.toLowerCase(); render(); };
+  $("fStage").onchange = e=>{ state.stage=e.target.value; render(); };
+  $("fIndustry").onchange = e=>{ state.industry=e.target.value; render(); };
+  $("fCompetitor").onchange = e=>{ state.competitor=e.target.value; render(); };
+  $("fWeak").onchange = e=>{ state.weak=e.target.value; render(); };
+  $("sort").onchange = e=>{ state.sort=e.target.value; render(); };
+  document.querySelectorAll(".toggle").forEach(t=>{
+    t.onclick = ()=>{ const f=t.dataset.flag; state.flags[f]=!state.flags[f]; t.classList.toggle("on",state.flags[f]); render(); };
+  });
+  $("reset").onclick = ()=>{
+    Object.assign(state,{search:"",stage:"",industry:"",competitor:"",weak:"",sort:"meeting"});
+    Object.keys(state.flags).forEach(k=>state.flags[k]=false);
+    $("search").value=""; $("fStage").value=""; $("fIndustry").value=""; $("fCompetitor").value="";
+    $("fWeak").value=""; $("sort").value="meeting";
+    document.querySelectorAll(".toggle").forEach(t=>t.classList.remove("on"));
+    render();
+  };
+
+  function matches(d){
+    const s=state;
+    if(s.search){ const blob=(d.name+" "+d.vertical+" "+d.competitor+" "+d.identifiedPain+" "+d.stage).toLowerCase();
+      if(!blob.includes(s.search)) return false; }
+    if(s.stage && d.stage!==s.stage) return false;
+    if(s.industry && d.industry!==s.industry) return false;
+    if(s.competitor && !(d.competitorTags||[]).includes(s.competitor)) return false;
+    if(s.weak && d.meddpicc[s.weak]==="green") return false; // show only deals with a gap on that component
+    if(s.flags.attention && !needsAttention(d)) return false;
+    if(s.flags.stale && !isStale(d.lastTouch)) return false;
+    if(s.flags.unknownEB && !unknownEB(d)) return false;
+    if(s.flags.security && !(d.flags&&d.flags.securityPending)) return false;
+    if(s.flags.migration && !(d.flags&&d.flags.migrationRisk)) return false;
+    return true;
+  }
+
+  function sortFn(a,b){
+    switch(state.sort){
+      case "meeting": return (a.nextMeeting?.iso||"9999").localeCompare(b.nextMeeting?.iso||"9999");
+      case "touch": return b.lastTouch.localeCompare(a.lastTouch);
+      case "medd": return greenCount(a)-greenCount(b); // weakest first
+      case "attention": return (needsAttention(b)?1:0)-(needsAttention(a)?1:0);
+      case "name": return a.name.localeCompare(b.name);
+    }
+    return 0;
+  }
+
+  function render(){
+    const rows = DEALS.filter(matches).sort(sortFn);
+    $("count").textContent = `${rows.length} of ${DEALS.length} deals`;
+    $("list").innerHTML = rows.length ? rows.map(d=>{
+      const stale=isStale(d.lastTouch), n=daysSince(d.lastTouch);
+      const sp = stale?`<span class="pill stale">STALE · ${n}d</span>`:`<span class="pill fresh">Fresh · ${n}d</span>`;
+      const ap = needsAttention(d)?`<span class="pill attn">Attention</span>`:"";
+      const meet = d.nextMeeting?`<span class="pill meet">📅 ${d.nextMeeting.date} — ${d.nextMeeting.title}</span>`:"";
+      return `<div class="deal-row" data-id="${d.id}">
+        <div class="r1">
+          <div><div class="name">${d.name}</div><div class="vertical">${d.vertical}</div></div>
+          <div style="text-align:right">${sp} ${ap}</div>
+        </div>
+        <div class="r2">
+          <span class="pill stage">${d.stage}</span>
+          <span class="pill medd">MEDDPICC ${d.meddpiccSummary} · weak: ${d.weak}</span>
+          ${meet}
+        </div>
+        <div class="meta">
+          <span><span class="k">Competitor:</span> ${d.competitor}</span>
+          <span><span class="k">Decision maker:</span> ${d.decisionMaker.text}</span>
+          <span><span class="k">Budget owner:</span> ${d.economicBuyer}</span>
+          <span><span class="k">Last touch:</span> ${d.lastTouch}</span>
+        </div>
+        <div class="nba"><b>Next:</b> ${d.nextAction.text} <span style="color:var(--muted)">(${d.nextAction.owner} · ${d.nextAction.date})</span></div>
+      </div>`;
+    }).join("") : '<div class="empty">No deals match the current filters.</div>';
+    document.querySelectorAll(".deal-row").forEach(r=> r.onclick=()=>openDrawer(r.dataset.id));
+  }
+
+  /* ---- drawer ---- */
+  let curTab="Overview";
+  const TABS=["Overview","MEDDPICC","Buying Committee","Risks","Next Actions","Technical / Security","Migration / Data","Competition","Commercial Context"];
+  function openDrawer(id){
+    const d=DEALS.find(x=>x.id===id); if(!d) return;
+    $("dName").textContent=d.name; $("dVertical").textContent=d.vertical;
+    $("tabs").innerHTML=TABS.map(t=>`<div class="tab ${t===curTab?'on':''}" data-tab="${t}">${t}</div>`).join("");
+    document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{curTab=t.dataset.tab;openDrawer(id);});
+    $("dBody").innerHTML=tabContent(d,curTab);
+    $("drawer").classList.add("open"); $("scrim").classList.add("open");
+  }
+  function closeDrawer(){ $("drawer").classList.remove("open"); $("scrim").classList.remove("open"); curTab="Overview"; }
+  $("close").onclick=closeDrawer; $("scrim").onclick=closeDrawer;
+
+  function chip(s,txt){ return `<span class="chip ${s}"><span class="dot ${s}"></span>${txt}</span>`; }
+  function riskList(arr){ return arr&&arr.length?`<ul class="risk-list">${arr.map(x=>`<li>${x}</li>`).join("")}</ul>`:'<div class="empty">None recorded.</div>'; }
+
+  function tabContent(d,tab){
+    if(tab==="Overview"){
+      return `
+      <div class="drow"><span class="k">Stage</span><span>${d.stage}</span></div>
+      <div class="drow"><span class="k">Next meeting</span><span>${d.nextMeeting?d.nextMeeting.date+" — "+d.nextMeeting.title+"<br><span style='color:var(--muted);font-size:12px'>"+d.nextMeeting.sub+"</span>":"—"}</span></div>
+      <div class="drow"><span class="k">MEDDPICC</span><span>${d.meddpiccSummary} · weak: ${d.weak}</span></div>
+      <div class="drow"><span class="k">Decision maker</span><span>${chip(d.decisionMaker.status,d.decisionMaker.text)}</span></div>
+      <div class="drow"><span class="k">Budget owner</span><span>${chip('grey',d.economicBuyer)}</span></div>
+      <div class="drow"><span class="k">Metrics</span><span>${d.metrics}</span></div>
+      <div class="drow"><span class="k">Identified pain</span><span>${d.identifiedPain}</span></div>
+      <div class="drow"><span class="k">Last touch</span><span>${d.lastTouch} ${isStale(d.lastTouch)?'<span class="pill stale">STALE</span>':'<span class="pill fresh">Fresh</span>'}</span></div>
+      <div class="drow"><span class="k">Confidence</span><span style="font-style:italic;color:var(--muted)">${d.confidence}</span></div>`;
+    }
+    if(tab==="MEDDPICC"){
+      const items=MEDD_KEYS.map(k=>{const v=d.meddpicc[k];const nt=d.meddpiccNotes&&d.meddpiccNotes[k];
+        return `<div class="item"><div class="lab">${k}</div><div class="st">${chip(v,STATUS_LABEL[v])}</div>${nt?`<div class="nt">${nt}</div>`:""}</div>`;}).join("");
+      return `<div class="panel-title">${d.meddpiccSummary} Green · weakest: ${d.weak}</div><div class="medd-grid">${items}</div>`;
+    }
+    if(tab==="Buying Committee"){
+      return d.committee.map(m=>`<div class="member"><div><div class="who">${m.name}</div>
+        <div class="role">${m.role}</div><div style="margin-top:5px">${chip(m.status,m.statusText)}</div></div></div>`).join("");
+    }
+    if(tab==="Risks"){
+      return `<div class="panel-title">Technical / Security</div>${riskList(d.risks.technical)}
+        <div class="panel-title">Migration / Data</div>${riskList(d.risks.migration)}
+        <div class="panel-title">Decision Process</div>${riskList(d.risks.decision)}
+        <div class="panel-title">Competition</div>${riskList(d.risks.competition)}`;
+    }
+    if(tab==="Next Actions"){
+      return `<div class="nba-box">${d.nextAction.text}<div class="owner">Owner: ${d.nextAction.owner} · Due ${d.nextAction.date}</div></div>`;
+    }
+    if(tab==="Technical / Security"){ return riskList(d.risks.technical); }
+    if(tab==="Migration / Data"){ return riskList(d.risks.migration); }
+    if(tab==="Competition"){
+      return `<div class="drow"><span class="k">Landscape</span><span>${d.competitor}</span></div>`+riskList(d.risks.competition);
+    }
+    if(tab==="Commercial Context"){
+      const c=d.commercialContext;
+      if(!c) return '<div class="empty">No commercial context recorded.</div>';
+      const ae = c.ae_alignment_needed
+        ? '<span class="chip amber"><span class="dot amber"></span>AE alignment needed</span>'
+        : '<span class="chip green"><span class="dot green"></span>No AE alignment flagged</span>';
+      const io = c.internal_only ? '<span class="pill ccbadge">Internal only</span>' : '';
+      return `<div class="cc-banner">${io}<span class="cc-note">Internal SE context. Not customer-facing positioning.</span></div>
+        <div class="drow"><span class="k">Price sensitivity</span><span>${c.price_sensitivity||'Unknown'}</span></div>
+        <div class="drow"><span class="k">Budget signal</span><span>${c.budget_signal||'Unknown'}</span></div>
+        <div class="drow"><span class="k">Renewal / contract timing</span><span>${c.renewal_or_contract_timing||'Unknown'}</span></div>
+        <div class="drow"><span class="k">Procurement status</span><span>${c.procurement_status||'Unknown'}</span></div>
+        <div class="drow"><span class="k">Commercial risk</span><span>${c.commercial_risk||'Unknown'}</span></div>
+        <div class="drow"><span class="k">Demo implication</span><span>${c.demo_implication||'Unknown'}</span></div>
+        <div class="drow"><span class="k">AE alignment</span><span>${ae}</span></div>`;
+    }
+    return "";
+  }
+
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); });
+  render();
+})();
+</script>
+</body>
+</html>
